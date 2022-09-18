@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">CrazyEights</string>
+    <string name="about">About</string>
+    <string name="todo">TODO</string>
+    <string name="play">Play</string>
+    <string name="crazy_eights">CRAZY EIGHTS!!!</string>
+    <string name="choose_a_suit">Choose a suit</string>
+    <string name="ok">OK</string>
+    <string name="you_won">YOU WON!!!!!!</string>
+    <string name="newGame">New Game</string>
+</resources>

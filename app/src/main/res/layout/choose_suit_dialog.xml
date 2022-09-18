@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/chooseSuitLayout"
+    android:layout_width="275dp"
+    android:layout_height="250dp"
+    android:layout_gravity="center"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/chooseSuitText"
+        android:layout_width="232dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="29dp"
+        android:paddingVertical="10sp"
+        android:text="@string/choose_a_suit"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/suitSpinner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.511"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_conversion_absoluteHeight="50dp"
+        tools:layout_conversion_absoluteWidth="270dp" />
+
+    <Spinner
+        android:id="@+id/suitSpinner"
+        android:layout_width="234dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="14dp"
+        android:drawSelectorOnTop="true"
+        app:layout_constraintBottom_toTopOf="@+id/okButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.487"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/chooseSuitText"
+        tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck"
+        tools:layout_conversion_absoluteHeight="50dp"
+        tools:layout_conversion_absoluteWidth="275dp" />
+
+    <Button
+        android:id="@+id/okButton"
+        android:layout_width="138dp"
+        android:layout_height="48dp"
+        android:layout_marginBottom="40dp"
+        android:text="@string/ok"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/suitSpinner"
+        tools:layout_conversion_absoluteHeight="48dp"
+        tools:layout_conversion_absoluteWidth="125dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
