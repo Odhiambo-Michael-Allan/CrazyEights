@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -96,11 +97,21 @@ public class HumanPlayer extends Player
                             view.getSuitNameBasedOn( suitChoice ) ), Toast.LENGTH_SHORT )
                     .show();
             view.getDiscardPile().setValidSuit( suitChoice );
+            setToFullScreen();
             cleanUp();
         } );
         changeSuitDialog.setCanceledOnTouchOutside( false );  // The dialog is only dismissed by
                                                               // the "ok" button..
         changeSuitDialog.show();
+    }
+
+    private void setToFullScreen() {
+        view.setSystemUiVisibility( View.SYSTEM_UI_FLAG_LOW_PROFILE |
+                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION );
     }
 
     @Override

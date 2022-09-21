@@ -187,7 +187,6 @@ public class ComputerPlayer extends Player
 
     @Override
     public void onMotionUp( MotionEvent event ) {
-
     }
 
     Handler donePlayingHandler = new Handler( Looper.getMainLooper() ) {

@@ -6,6 +6,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Random;
 
 abstract class Player
         implements CrazyEightsView.ViewListener {
@@ -13,7 +14,6 @@ abstract class Player
     private String playerName;
     protected Hand hand;
     protected Context application;
-    protected int validSuitChoice;
     protected ArrayList<PlayerListener> listeners = new ArrayList<>();
     protected CrazyEightsView view;
     protected boolean madeAValidMove;
@@ -62,17 +62,6 @@ abstract class Player
     }
 
 
-    public boolean hasAPlayableCard( Card topCard ) {
-        Iterator i = hand.getIterator();
-        while ( i.hasNext() ) {
-            Card card = ( Card ) i.next();
-            if ( card.getSuit() == topCard.getSuit() || card.getRank() == topCard.getRank()
-                    || card.getRank() == 8 )
-                return true;
-        }
-        return false;
-    }
-
     /**
      * This method will be used by the computer player to get a card to play. Null will be
      * returned if no card in the hand is playable...
@@ -98,11 +87,7 @@ abstract class Player
     public abstract void playedAnEight();
 
     public int getValidSuitChoice() {
-        return validSuitChoice;
-    }
-
-    public void setValidSuitChoice() {
-        validSuitChoice = 0;
+        return new Random().nextInt( 4 );
     }
 
     public void register( PlayerListener listener ) {

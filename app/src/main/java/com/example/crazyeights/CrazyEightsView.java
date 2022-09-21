@@ -2,6 +2,7 @@ package com.example.crazyeights;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -17,6 +18,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Looper;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,60 +51,6 @@ public class CrazyEightsView extends View {
         initializeDeck();
     }
 
-
-    public void endHand() {
-        boardIsDisabled = true;
-        showEndHandDialog();
-    }
-
-    private void showEndHandDialog() {
-        final Dialog endHandDialog = new Dialog( application );
-        endHandDialog.requestWindowFeature( Window.FEATURE_NO_TITLE );
-        endHandDialog.setContentView( R.layout.endhanddialog );
-        endHandDialog.setCanceledOnTouchOutside( false );
-        TextView resultsTextView = endHandDialog.findViewById( R.id.resultTextView );
-        if ( currentPlayer.equals( humanPlayer ) )
-            resultsTextView.setText( "YOU WON!!!" );
-        else
-            resultsTextView.setText( "SORRY, YOU LOST" );
-        endHandDialog.show();
-    }
-
-    public void addListener( ViewListener listener ) {
-        listeners.add( listener );
-        LogUtil.i( "ADDING VIEW LISTENER. SIZE: " + listeners.size() );
-    }
-
-    public String getSuitNameBasedOn( int value ) {
-        switch ( value ) {
-            case 0 :
-                return "DIAMONDS";
-            case 1 :
-                return "HEARTS";
-            case 2 :
-                return "SPADES";
-            case 3 :
-                return "CLUBS";
-        }
-        return null;
-    }
-
-    public Player getCurrentPlayer() {
-        return currentPlayer;
-    }
-
-    public Card getTopCard() {
-        return discardPile.getTopCard();
-    }
-
-    public Deck getDiscardPile() {
-        return discardPile;
-    }
-
-    public Deck getDeck() {
-        return deck;
-    }
-
     private void initializePaint() {
         paint.setAntiAlias( true );
         paint.setColor( Color.BLACK );
@@ -110,12 +58,6 @@ public class CrazyEightsView extends View {
         paint.setTextSize( scale*20 );
         paint.setTextAlign( Paint.Align.CENTER );
     }
-
-    public void removeListener( ViewListener listener ) {
-        listeners.remove( listener );
-        LogUtil.i( "REMOVING VIEW LISTENER. SIZE: " + listeners.size() );
-    }
-
 
     /**
      * Initialization of the deck takes some time so i decided to do it on a separate thread..
@@ -129,37 +71,24 @@ public class CrazyEightsView extends View {
         new Thread( runnable ).start();
     }
 
-
-    protected void onDraw( Canvas canvas ) {
-        super.onDraw( canvas );
-        this.canvas = canvas;
-        if ( deck == null ) {
-            LogUtil.i( "CANVAS WIDTH: %d, CANVAS HEIGHT: %d", canvas.getWidth(), canvas.getHeight() );
-            displayWaitingScreen();
-            return;
+    /**
+     * This handler will listen for messages from the initialization thread.
+     * After the initialization thread is done, it will notify this handler
+     * which will then do the remaining initialization tasks..
+     */
+    Handler deckInitializationHandler = new Handler( Looper.getMainLooper() ) {
+        @Override
+        public void handleMessage( Message message ) {
+            deck = tempDeck;
+            addListener( deck );
+            discardPile = new DiscardPile( application, CrazyEightsView.this );
+            addListener( discardPile );
+            initializePlayers();
+            dealCards();
+            invalidate();
+            Toast.makeText( application, "Its your turn", Toast.LENGTH_SHORT ).show();
         }
-        notifyListenersCanvasIsBeingDrawn( canvas );
-    }
-
-    private void displayWaitingScreen() {
-        Bitmap cardImage = BitmapFactory.decodeResource( application.getResources(),
-                R.drawable.loadingscreenlogo );
-        int scaledCW = cardImage.getWidth() / 8 ;
-        int scaledCH = cardImage.getHeight() / 8;
-        cardImage = Bitmap.createScaledBitmap( cardImage, scaledCW, scaledCH, false );
-        canvas.drawBitmap( cardImage, 150, 800, null );
-        canvas.drawText( "Loading..", 550, 1400, paint );
-    }
-
-    private void notifyListenersCanvasIsBeingDrawn( Canvas canvas ) {
-        LogUtil.i( "NOTIFYING LISTENERS CANVAS BEING REDRAWN. " );
-        ViewListener[] viewListeners = new ViewListener[ listeners.size() ];
-        listeners.toArray( viewListeners );
-        for ( int i = 0; i < viewListeners.length; i++ ) {
-            viewListeners[i].onDraw( canvas );
-        }
-    }
-
+    };
 
     private void initializePlayers() {
         humanPlayer = new HumanPlayer( "Michael", application, this );
@@ -171,6 +100,12 @@ public class CrazyEightsView extends View {
     }
 
     private void registerListenersWithBothPlayers() {
+        registerListenerWithHumanPlayer();
+        registerListenerWithComputer();
+
+    }
+
+    private void registerListenerWithHumanPlayer() {
         humanPlayer.register( new Player.PlayerListener() {
             @Override
             public void cardIsSelected() {
@@ -183,6 +118,9 @@ public class CrazyEightsView extends View {
                 switchTurns();
             }
         } );
+    }
+
+    private void registerListenerWithComputer() {
         computer.register( new Player.PlayerListener() {
             @Override
             public void cardIsSelected(){
@@ -194,19 +132,6 @@ public class CrazyEightsView extends View {
                 switchTurns();
             }
         } );
-    }
-
-    private void switchTurns() {
-        LogUtil.i( "SWITCHING TURNS.." );
-        if ( currentPlayer.equals( humanPlayer ) ) {
-            boardIsDisabled = true;
-            currentPlayer = computer;
-        }
-        else {
-            boardIsDisabled = false;
-            currentPlayer = humanPlayer;
-        }
-        currentPlayer.play();
     }
 
     private void dealCards() {
@@ -224,7 +149,99 @@ public class CrazyEightsView extends View {
         }
     }
 
-    // ---------------------------------------------------------------------------------
+    private void initializeTheDiscardPile() {
+        // Add the top card on the deck to the discard pile. If the top card is an eight,
+        // return it into the deck and shuffle it..
+        Card topCard = deck.getCard( 0 );
+        while ( topCard.getRank() == 8 ) {
+            deck.shuffleCards();
+            topCard = deck.getCard( 0 );
+        }
+        deck.removeCard( topCard );
+        discardPile.addCard( topCard );
+    }
+
+    public void addListener( ViewListener listener ) {
+        listeners.add( listener );
+        LogUtil.i( "ADDING VIEW LISTENER. SIZE: " + listeners.size() );
+    }
+
+    public void removeListener( ViewListener listener ) {
+        listeners.remove( listener );
+        LogUtil.i( "REMOVING VIEW LISTENER. SIZE: " + listeners.size() );
+    }
+
+    public Player getCurrentPlayer() {
+        return currentPlayer;
+    }
+
+    public Deck getDiscardPile() {
+        return discardPile;
+    }
+
+    public Deck getDeck() {
+        return deck;
+    }
+
+
+    public String getSuitNameBasedOn( int value ) {
+        switch ( value ) {
+            case 0 :
+                return "DIAMONDS";
+            case 1 :
+                return "HEARTS";
+            case 2 :
+                return "SPADES";
+            case 3 :
+                return "CLUBS";
+        }
+        return null;
+    }
+
+    protected void onDraw( Canvas canvas ) {
+        super.onDraw( canvas );
+        this.canvas = canvas;
+        if ( deck == null ) {
+            displayWaitingScreen();
+            return;
+        }
+        notifyListenersCanvasIsBeingDrawn( canvas );
+    }
+
+    private void displayWaitingScreen() {
+        Bitmap cardImage = BitmapFactory.decodeResource( application.getResources(),
+                R.drawable.loadingscreenlogo );
+        int scaledCW = cardImage.getWidth() / 8 ;
+        int scaledCH = cardImage.getHeight() / 8;
+        cardImage = Bitmap.createScaledBitmap( cardImage, scaledCW, scaledCH, false );
+        canvas.drawBitmap( cardImage, 150, 800, null );
+        canvas.drawText( "Loading..", 550, 1400, paint );
+        canvas.drawText( "  Be the first to clear your hand.", 500, 1450, paint );
+    }
+
+    private void notifyListenersCanvasIsBeingDrawn( Canvas canvas ) {
+        LogUtil.i( "NOTIFYING LISTENERS CANVAS BEING REDRAWN. " );
+        ViewListener[] viewListeners = new ViewListener[ listeners.size() ];
+        listeners.toArray( viewListeners );
+        for ( int i = 0; i < viewListeners.length; i++ ) {
+            viewListeners[i].onDraw( canvas );
+        }
+    }
+
+
+    private void switchTurns() {
+        LogUtil.i( "SWITCHING TURNS.." );
+        if ( currentPlayer.equals( humanPlayer ) ) {
+            boardIsDisabled = true;
+            currentPlayer = computer;
+        }
+        else {
+            boardIsDisabled = false;
+            currentPlayer = humanPlayer;
+        }
+        currentPlayer.play();
+    }
+
     public void deckIsEmpty() {
         boardIsDisabled = true;
         moveCardsFromTheDiscardPileToTheDeck();
@@ -276,19 +293,6 @@ public class CrazyEightsView extends View {
             moveCardsFromTheDiscardPileToTheDeck();
         }
     };
-    // ---------------------------------------------------------------------------------
-
-    private void initializeTheDiscardPile() {
-        // Add the top card on the deck to the discard pile. If the top card is an eight,
-        // return it into the deck and shuffle it..
-        Card topCard = deck.getCard( 0 );
-        while ( topCard.getRank() == 8 ) {
-            deck.shuffleCards();
-            topCard = deck.getCard( 0 );
-        }
-        deck.removeCard( topCard );
-        discardPile.addCard( topCard );
-    }
 
     public boolean onTouchEvent( MotionEvent event ) {
         if (boardIsDisabled)
@@ -303,7 +307,6 @@ public class CrazyEightsView extends View {
                 invalidate();
                 break;
             case MotionEvent.ACTION_UP :
-                // If a card was being dragged, it should be placed into the human's hand.
                 notifyListenersOfActionUpEvent( event );
                 invalidate();
                 break;
@@ -342,37 +345,32 @@ public class CrazyEightsView extends View {
     }
 
 
-    /**
-     * This handler will listen for messages from the initialization thread.
-     * After the initialization thread is done, it will notify this handler
-     * which will then do the remaining initialization tasks..
-     */
-    Handler deckInitializationHandler = new Handler( Looper.getMainLooper() ) {
-        @Override
-        public void handleMessage( Message message ) {
-            deck = tempDeck;
-            addListener( deck );
-            discardPile = new DiscardPile( application, CrazyEightsView.this );
-            addListener( discardPile );
-            initializePlayers();
-            dealCards();
-            invalidate();
-            Toast.makeText( application, "Its your turn", Toast.LENGTH_SHORT ).show();
-        }
-    };
+    public void endHand() {
+        boardIsDisabled = true;
+        deck = null;
+        showEndHandDialog();
+    }
 
-    Handler discardToDeckHandler = new Handler( Looper.getMainLooper() ) {
-        @Override
-        public void handleMessage( Message message ) {
-            Toast.makeText( application, "Done moving cards from the discard " +
-                    "pile to the deck. You can now move cards", Toast.LENGTH_LONG ).show();
-            deck.shuffleCards();
-            Card card = deck.getTopCard();
-            discardPile.addCard( card );
-            deck.removeCard( card );
+    private void showEndHandDialog() {
+        final Dialog endHandDialog = new Dialog( application );
+        endHandDialog.requestWindowFeature( Window.FEATURE_NO_TITLE );
+        endHandDialog.setContentView( R.layout.endhanddialog );
+        endHandDialog.setCanceledOnTouchOutside( false );
+        TextView resultsTextView = endHandDialog.findViewById( R.id.resultTextView );
+        Button newGameButton = endHandDialog.findViewById( R.id.newGameButton );
+        newGameButton.setOnClickListener( ( view ) -> {
+            boardIsDisabled = false;
+            listeners.clear();
+            initializeDeck();
             invalidate();
-        }
-    };
+            endHandDialog.dismiss();
+        } );
+        if ( currentPlayer.equals( humanPlayer ) )
+            resultsTextView.setText( "YOU WON!!!" );
+        else
+            resultsTextView.setText( "SORRY, YOU LOST" );
+        endHandDialog.show();
+    }
 
 
     /**

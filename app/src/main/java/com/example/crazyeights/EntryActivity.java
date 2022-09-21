@@ -17,7 +17,6 @@ public class EntryActivity extends AppCompatActivity {
         super.onCreate( savedInstanceState );
         binding = ActivityEntryBinding.inflate( getLayoutInflater() );
         setContentView( binding.getRoot() );
-
         setupTheButtonListener();
     }
 
@@ -37,12 +36,9 @@ public class EntryActivity extends AppCompatActivity {
     }
 
     private void setupTheButtonListener() {
-        binding.playButton.setOnClickListener( new View.OnClickListener() {
-            @Override
-            public void onClick( View view ) {
-                Intent gameIntent = new Intent( EntryActivity.this, CrazyEightsActivity.class );
-                startActivity( gameIntent );
-            }
+        binding.playButton.setOnClickListener(view -> {
+            Intent gameIntent = new Intent( EntryActivity.this, CrazyEightsActivity.class );
+            startActivity( gameIntent );
         } );
     }
 
